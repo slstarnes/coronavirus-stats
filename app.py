@@ -34,7 +34,7 @@ app.layout = html.Div([
                 dict(
                     x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
                     y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
-                    text=who_data_t0[who_data_t0['location'] == i]['date'],
+                    text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
                     mode='lines',
                     opacity=0.7,
                     marker={
@@ -59,4 +59,4 @@ app.layout = html.Div([
 ])
 
 if __name__ == '__main__':
-    app.run_server()
+    app.run_server(debug=True)
