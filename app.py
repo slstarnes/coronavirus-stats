@@ -29,34 +29,64 @@ x_max = min(who_data_t0[who_data_t0['location'] == 'United States']['since_t0'].
 
 app.layout = html.Div([
     html.H1("Coronavirus Confirmed Cases"),
-    dcc.Graph(
-        id='coronavirus-t0',
-        figure={
-            'data': [
-                dict(
-                    x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
-                    y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
-                    text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-                    mode='lines',
-                    opacity=0.7,
-                    marker={
-                        'size': 15,
-                        'line': {'width': 0.5, 'color': 'white'}
-                    },
-                    name=i,
-                    hovertemplate='%{text} (Day %{x})<br>'
-                                  'Confirmed Cases: %{y:,.0f}<br>'
-                                  
-                ) for i in country_filter
-            ],
-            'layout': dict(
-                xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
-                yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
-                margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
-                hovermode='compare'
-            )
-        }
-    ),
+    dcc.Tabs([
+        dcc.Tab(label='Line Chart', children=[
+            dcc.Graph(
+                id='coronavirus-t0-line',
+                figure={
+                    'data': [
+                        dict(
+                            x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
+                            y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
+                            text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            mode='lines',
+                            opacity=0.7,
+                            marker={
+                                'size': 15,
+                                'line': {'width': 0.5, 'color': 'white'}
+                            },
+                            name=i,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+                                          
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
+                        yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ]),
+        dcc.Tab(label='Bar Chart', children=[
+            dcc.Graph(
+                id='coronavirus-t0-bar',
+                figure={
+                    'data': [
+                        dict(
+                            x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
+                            y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
+                            name=i,
+                            text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            type='bar',
+                            opacity=0.7,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+                                          
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
+                        yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ])
+    ]),
     html.P("source: https://ourworldindata.org/coronavirus-source-data"),
 ])
 
