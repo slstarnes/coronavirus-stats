@@ -7,38 +7,56 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-df = pd.read_csv('https://gist.githubusercontent.com/chriddyp/5d1ea79569ed194d432e56108a04d188/raw/a9f9e8076b837d541398e999dcbac2b2826a81f8/gdp-life-exp-2007.csv')
+who_data = pd.read_csv('https://covid.ourworldindata.org/data/full_data.csv')
+t0_threshold = 100
+who_data_t0 = who_data.query('total_cases >= @t0_threshold')
+t0_date = who_data_t0.groupby('location').min()['date']
+who_data_t0.loc[:, 't0_date'] = who_data_t0['location'].map(t0_date)
+who_data_t0.loc[:, 'since_t0'] = pd.to_datetime(who_data_t0['date']) - pd.to_datetime(who_data_t0['t0_date'])
+who_data_t0.loc[:, 'since_t0']  = who_data_t0['since_t0'].map(lambda x: x.days)
+who_data_t0['date'] = pd.to_datetime(who_data_t0['date'])
+
+country_filter = ['China', 'South Korea', 'Italy', 'Iran', 'United States']
 
 server = app.server
+dcc.Graph.responsive = True
+
+x_max = min(who_data_t0[who_data_t0['location'] == 'United States']['since_t0'].max() + 14, 
+            who_data_t0['since_t0'].max()) 
+
 
 app.layout = html.Div([
+    html.H1("Coronavirus Confirmed Cases"),
     dcc.Graph(
-        id='life-exp-vs-gdp',
+        id='coronavirus-t0',
         figure={
             'data': [
                 dict(
-                    x=df[df['continent'] == i]['gdp per capita'],
-                    y=df[df['continent'] == i]['life expectancy'],
-                    text=df[df['continent'] == i]['country'],
-                    mode='markers',
+                    x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
+                    y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
+                    text=who_data_t0[who_data_t0['location'] == i]['date'],
+                    mode='lines',
                     opacity=0.7,
                     marker={
                         'size': 15,
                         'line': {'width': 0.5, 'color': 'white'}
                     },
-                    name=i
-                ) for i in df.continent.unique()
+                    name=i,
+                    hovertemplate='%{text} (Day %{x})<br>'
+                                  'Confirmed Cases: %{y:,.0f}<br>'
+                                  
+                ) for i in country_filter
             ],
             'layout': dict(
-                xaxis={'type': 'log', 'title': 'GDP Per Capita'},
-                yaxis={'title': 'Life Expectancy'},
-                margin={'l': 40, 'b': 40, 't': 10, 'r': 10},
-                legend={'x': 0, 'y': 1},
-                hovermode='closest'
+                xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
+                yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                hovermode='compare'
             )
         }
-    )
+    ),
+    html.P("source: https://ourworldindata.org/coronavirus-source-data"),
 ])
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server()
