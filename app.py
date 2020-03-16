@@ -1,7 +1,8 @@
 import dash
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import pandas as pd
 
 # Here is my generalized recipe for those who would like to implement this as well:
@@ -101,29 +102,71 @@ x_max = min(who_data_t0[who_data_t0['location'] == 'United States']['since_t0'].
 
 app.layout = html.Div([
     html.H1("Coronavirus Confirmed Cases"),
-    dcc.Tabs(id="tabs", children=[
-        dcc.Tab(label='Line Chart', value='line-tab'),
-        dcc.Tab(label='Bar Chart', value='bar-tab')
-    ]),
+    dcc.Store(id='dropdown-cache', data=country_filter),
+    dbc.Tabs(
+        id="tabs",
+        # parent_className='custom-tabs',
+        # value='Line Chart',
+        # className='custom-tabs-container',
+        children=[
+            dbc.Tab(
+                label='Line Chart', 
+                id='line-tab',
+                className='custom-tab',
+                # selected_className='custom-tab--selected',
+            ),
+            dbc.Tab(
+                label='Bar Chart', 
+                id='bar-tab',
+                className='custom-tab',
+                # selected_className='custom-tab--selected',
+            )
+        ],
+        active_tab="line-tab"
+    ),
     html.Div(id='tabs-content'),
     html.Div([
         dcc.Dropdown(
             id='dropdown',
             options=[{'label': i, 'value': i} for i in countries],
             multi=True,
-            value="China"
+            value='China'
         ),
     ]),
     html.P(["data source: https://ourworldindata.org/coronavirus-source-data", html.Br(), 
                "code source: https://github.com/slstarnes/coronavirus-stats"]),
 ])
 
+@app.callback(Output('dropdown-cache', 'data'),
+              [Input('dropdown', 'value')],
+               [State('tabs', 'id')])
+def store_dropdown_cache(dropdown_sel, tab):
+    print('store_dropdown_cache')
+    print('dropdown_sel', dropdown_sel)
+    print('tab', tab)
+    if tab == 'line-tab':
+        return dropdown_sel
+    elif tab == 'bar-tab':
+        return dropdown_sel
+
+# @app.callback(Output('dropdown', 'value'),
+#               [Input('tabs', 'value')],
+#               [State('dropdown-cache', 'data')])
+# def synchronize_dropdowns(_, cache):
+#     print('synchronize_dropdowns')
+#     print('cache', cache)
+#     return cache
+
 @app.callback(Output('tabs-content', 'children'),
-              [Input('tabs', 'value'),
-               Input('dropdown', 'value')])
-def update_figure(tab, country_filter=['China', 'South Korea', 'Italy', 'Iran', 'United States']):
+              [Input('tabs', 'id'), Input('dropdown-cache', 'data')])
+def update_figure(tab, country_list):
+    print('update_figure')
+    print('country_list', country_list)
+    if country_list == None:
+        print('NONE')
+        country_list = country_filter
     if tab == 'bar-tab':
-        return dcc.Graph(
+        return dbc.Graph(
                     id='coronavirus-t0-bar',
                     figure={
                         'data': [
@@ -137,7 +180,7 @@ def update_figure(tab, country_filter=['China', 'South Korea', 'Italy', 'Iran', 
                                 hovertemplate='%{text} (Day %{x})<br>'
                                               'Confirmed Cases: %{y:,.0f}<br>'
                                               
-                            ) for i in country_filter
+                            ) for i in country_list
                         ],
                         'layout': dict(
                             xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
@@ -148,7 +191,7 @@ def update_figure(tab, country_filter=['China', 'South Korea', 'Italy', 'Iran', 
                     }
                 )
     elif tab == 'line-tab':
-        return dcc.Graph(
+        return dbc.Graph(
                     id='coronavirus-t0-line',
                     figure={
                         'data': [
@@ -166,7 +209,7 @@ def update_figure(tab, country_filter=['China', 'South Korea', 'Italy', 'Iran', 
                                 hovertemplate='%{text} (Day %{x})<br>'
                                               'Confirmed Cases: %{y:,.0f}<br>'
                                               
-                            ) for i in country_filter
+                            ) for i in country_list
                         ],
                         'layout': dict(
                             xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
