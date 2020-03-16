@@ -10,6 +10,9 @@ app.title = 'Coronavirus Stats'
 server = app.server
 
 who_data = pd.read_csv('https://covid.ourworldindata.org/data/full_data.csv')
+jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
+                       'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/'+
+                       'time_series_19-covid-Confirmed.csv')
 t0_threshold = 100
 
 who_data_t0 = who_data.query('total_cases >= @t0_threshold')
