@@ -1,6 +1,5 @@
 import dash
 import dash_core_components as dcc
-import dash_bootstrap_components as dbc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import pandas as pd
@@ -103,26 +102,25 @@ x_max = min(who_data_t0[who_data_t0['location'] == 'United States']['since_t0'].
 app.layout = html.Div([
     html.H1("Coronavirus Confirmed Cases"),
     dcc.Store(id='dropdown-cache', data=country_filter),
-    dbc.Tabs(
-        id="tabs",
-        # parent_className='custom-tabs',
-        # value='Line Chart',
-        # className='custom-tabs-container',
+    dcc.Tabs(
+        id="tabs", 
+        parent_className='custom-tabs',
+        value='Line Chart',
+        className='custom-tabs-container',
         children=[
-            dbc.Tab(
+            dcc.Tab(
                 label='Line Chart', 
-                id='line-tab',
+                value='line-tab',
                 className='custom-tab',
-                # selected_className='custom-tab--selected',
+                selected_className='custom-tab--selected',
             ),
-            dbc.Tab(
+            dcc.Tab(
                 label='Bar Chart', 
-                id='bar-tab',
+                value='bar-tab',
                 className='custom-tab',
-                # selected_className='custom-tab--selected',
+                selected_className='custom-tab--selected',
             )
-        ],
-        active_tab="line-tab"
+        ]
     ),
     html.Div(id='tabs-content'),
     html.Div([
@@ -139,26 +137,26 @@ app.layout = html.Div([
 
 @app.callback(Output('dropdown-cache', 'data'),
               [Input('dropdown', 'value')],
-               [State('tabs', 'id')])
+               [State('dropdown-cache', 'data')])
 def store_dropdown_cache(dropdown_sel, tab):
     print('store_dropdown_cache')
     print('dropdown_sel', dropdown_sel)
-    print('tab', tab)
     if tab == 'line-tab':
         return dropdown_sel
     elif tab == 'bar-tab':
         return dropdown_sel
 
-# @app.callback(Output('dropdown', 'value'),
-#               [Input('tabs', 'value')],
-#               [State('dropdown-cache', 'data')])
-# def synchronize_dropdowns(_, cache):
-#     print('synchronize_dropdowns')
-#     print('cache', cache)
-#     return cache
+@app.callback(Output('dropdown', 'value'),
+              [Input('tabs', 'value')],
+              [State('dropdown-cache', 'data')])
+def synchronize_dropdowns(_, cache):
+    print('synchronize_dropdowns')
+    print('cache', cache)
+    return cache
 
 @app.callback(Output('tabs-content', 'children'),
-              [Input('tabs', 'id'), Input('dropdown-cache', 'data')])
+              [Input('tabs', 'value')],
+               [State('dropdown-cache', 'data')])
 def update_figure(tab, country_list):
     print('update_figure')
     print('country_list', country_list)
@@ -166,7 +164,7 @@ def update_figure(tab, country_list):
         print('NONE')
         country_list = country_filter
     if tab == 'bar-tab':
-        return dbc.Graph(
+        return dcc.Graph(
                     id='coronavirus-t0-bar',
                     figure={
                         'data': [
@@ -191,7 +189,7 @@ def update_figure(tab, country_list):
                     }
                 )
     elif tab == 'line-tab':
-        return dbc.Graph(
+        return dcc.Graph(
                     id='coronavirus-t0-line',
                     figure={
                         'data': [
