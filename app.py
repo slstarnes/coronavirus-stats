@@ -111,7 +111,7 @@ app.layout = html.Div([
             id='dropdown',
             options=[{'label': i, 'value': i} for i in countries],
             multi=True,
-            value="China"
+            value=country_filter
         ),
     ]),
     html.P(["data source: https://ourworldindata.org/coronavirus-source-data", html.Br(), 
