@@ -1,77 +1,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
 import pandas as pd
-
-# Here is my generalized recipe for those who would like to implement this as well:
-
-
-# # layout portion 
-
-# dcc.Store(id='dropdown-cache', data='initial value'),
-
-# dcc.Tabs(
-#     id='tabs',
-#     value='tab-1',
-#     parent_className='custom-tabs',
-#     className='custom-tabs-container',
-#     children=[
-
-#     dcc.Tab(
-#         label='Tab 1',
-#         value='tab-1',
-#         className='custom-tab',
-#         selected_className='custom-tab--selected',
-#         children=[
-#             dcc.Dropdown(
-#                 id='tab-1-dropdown',
-#             ),
-#         ]
-#     ),
-#     dcc.Tab(
-#         label='Tab 2',
-#         value='tab-2',
-#         className='custom-tab',
-#         selected_className='custom-tab--selected',
-#         children=[
-#             dcc.Dropdown(
-#                 id='tab-2-dropdown',
-#             ),
-#         ]
-#     )
-# )
-
-# # callback portion for synchronizing dropdown across tabs. 
-
-# @app.callback(Output('dropdown-cache', 'data'),
-#               [Input('tab-1-dropdown', 'value'),
-#                Input('tab-2-dropdown', 'value')],
-#                [State('tabs', 'value')])
-# def store_dropdown_cache(tab_1_drodown_sel, tab_2_drodown_sel, tab):
-#     if tab == 'tab-1':
-#         return tab_1_drodown_sel
-#     elif tab == 'tab-2':
-#         return tab_2_drodown_sel
-
-
-# # Note that using drodowns-cache as an input to change the 
-# # dropdown value breaks the layout. I feel this has something 
-# # to do with circular reference, but using the state w/tab 
-# # value as the input callback trigger works!
-
-# @app.callback(Output('tab-1-dropdown', 'value'),
-#               [Input('tabs', 'value')],
-#               [State('dropdown-cache', 'data')])
-# def synchronize_dropdowns(_, cache):
-#     return cache
-
-# @app.callback(Output('tab-2-dropdown', 'value'),
-#               [Input('tabs', 'value')],
-#               [State('dropdown-cache', 'data')])
-# def synchronize_dropdowns(_, cache):
-#     return cache
-
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -101,81 +31,73 @@ x_max = min(who_data_t0[who_data_t0['location'] == 'United States']['since_t0'].
 
 app.layout = html.Div([
     html.H1("Coronavirus Confirmed Cases"),
-    dcc.Tabs(id="tabs", children=[
-        dcc.Tab(label='Line Chart', value='line-tab'),
-        dcc.Tab(label='Bar Chart', value='bar-tab')
+    dcc.Tabs([
+        dcc.Tab(label='Line Chart', children=[
+            dcc.Graph(
+                id='coronavirus-t0-line',
+                figure={
+                    'data': [
+                        dict(
+                            x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
+                            y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
+                            text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            mode='lines',
+                            opacity=0.7,
+                            marker={
+                                'size': 15,
+                                'line': {'width': 0.5, 'color': 'white'}
+                            },
+                            name=i,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+                                          
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
+                        yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ]),
+        dcc.Tab(label='Bar Chart', children=[
+            dcc.Graph(
+                id='coronavirus-t0-bar',
+                figure={
+                    'data': [
+                        dict(
+                            x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
+                            y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
+                            name=i,
+                            text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            type='bar',
+                            opacity=0.7,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+                                          
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
+                        yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ])
     ]),
-    html.Div(id='tabs-content'),
-    html.Div([
-        dcc.Dropdown(
-            id='dropdown',
-            options=[{'label': i, 'value': i} for i in countries],
-            multi=True,
-            value="China"
-        ),
-    ]),
-    html.P(["data source: https://ourworldindata.org/coronavirus-source-data", html.Br(), 
-               "code source: https://github.com/slstarnes/coronavirus-stats"]),
+        html.P(['data source: ',
+                html.A("https://ourworldindata.org/coronavirus-source-data", 
+                       href="https://ourworldindata.org/coronavirus-source-data"), 
+                html.Br(), 
+                'code source: ',
+                html.A("https://github.com/slstarnes/coronavirus-stats", 
+                       href="https://github.com/slstarnes/coronavirus-stats")
+                ]),
 ])
-
-@app.callback(Output('tabs-content', 'children'),
-              [Input('tabs', 'value'),
-               Input('dropdown', 'value')])
-def update_figure(tab, country_filter=['China', 'South Korea', 'Italy', 'Iran', 'United States']):
-    if tab == 'bar-tab':
-        return dcc.Graph(
-                    id='coronavirus-t0-bar',
-                    figure={
-                        'data': [
-                            dict(
-                                x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
-                                y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
-                                name=i,
-                                text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-                                type='bar',
-                                opacity=0.7,
-                                hovertemplate='%{text} (Day %{x})<br>'
-                                              'Confirmed Cases: %{y:,.0f}<br>'
-                                              
-                            ) for i in country_filter
-                        ],
-                        'layout': dict(
-                            xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max]},
-                            yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
-                            margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
-                            hovermode='compare'
-                        )
-                    }
-                )
-    elif tab == 'line-tab':
-        return dcc.Graph(
-                    id='coronavirus-t0-line',
-                    figure={
-                        'data': [
-                            dict(
-                                x=who_data_t0[who_data_t0['location'] == i]['since_t0'],
-                                y=who_data_t0[who_data_t0['location'] == i]['total_cases'],
-                                text=who_data_t0[who_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-                                mode='lines',
-                                opacity=0.7,
-                                marker={
-                                    'size': 15,
-                                    'line': {'width': 0.5, 'color': 'white'}
-                                },
-                                name=i,
-                                hovertemplate='%{text} (Day %{x})<br>'
-                                              'Confirmed Cases: %{y:,.0f}<br>'
-                                              
-                            ) for i in country_filter
-                        ],
-                        'layout': dict(
-                            xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
-                            yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
-                            margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
-                            hovermode='compare'
-                        )
-                    }
-                ),
 
 if __name__ == '__main__':
     app.run_server(debug=True)
