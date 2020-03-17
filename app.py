@@ -15,7 +15,7 @@ jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
                        'time_series_19-covid-Confirmed.csv')
 
 t0_threshold = 100
-country_filter = ['China', 'South Korea', 'Italy', 'Iran', 'United States']
+country_filter = ['China', 'South Korea', 'United States', 'Italy', 'France', 'Spain']
 country_mapper = {
         'Korea, South': 'South Korea',
         'US': 'United States'    
