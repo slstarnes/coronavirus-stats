@@ -63,11 +63,8 @@ app.layout = html.Div([
                             y=jhu_data_t0[jhu_data_t0['location'] == i]['total_cases'],
                             text=jhu_data_t0[jhu_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
                             mode='lines',
-                            opacity=0.7,
-                            marker={
-                                'size': 15,
-                                'line': {'width': 0.5, 'color': 'white'}
-                            },
+                            opacity=1 if i == 'United States' else 0.7,
+                            line={'width': 3 if i == 'United States' else 1.5},
                             name=i,
                             hovertemplate='%{text} (Day %{x})<br>'
                                           'Confirmed Cases: %{y:,.0f}<br>'
@@ -94,7 +91,7 @@ app.layout = html.Div([
                             name=i,
                             text=jhu_data_t0[jhu_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
                             type='bar',
-                            opacity=0.7,
+                            opacity=1 if i == 'United States' else 0.7,
                             hovertemplate='%{text} (Day %{x})<br>'
                                           'Confirmed Cases: %{y:,.0f}<br>'
                                           
