@@ -2,6 +2,10 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import pandas as pd
+import requests
+from dateutil.parser import parse as date_parser
+from lxml import html as html_parser
+import pytz
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -9,9 +13,22 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats' 
 server = app.server
 
+def get_data_mod_date(url):
+    r = requests.get(url)
+    if r.status_code == 200:
+        tree = html_parser.fromstring(r.content)
+        t = tree.xpath('/html/body/div[4]/div/main/div[2]/div/div[3]/div[1]/span[2]/relative-time')
+        d = date_parser(t[0].attrib['datetime'])
+        tz = pytz.timezone('America/New_York')
+        d = d.astimezone(tz)
+        return f'{d:%m-%d-%Y @ %-I:%M %p %Z}'
+    return
+
 jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
                        'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/'+
                        'time_series_19-covid-Confirmed.csv')
+# this is the URL to the CSV file in GitHub so you can parse date of last commit. (the REST API required auth)
+data_file_url = 'https://github.com/CSSEGISandData/COVID-19/blob/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv'
 
 t0_threshold = 100
 country_filter = ['China', 'South Korea', 'United States', 'Italy', 'France', 'Spain']
@@ -44,6 +61,7 @@ dcc.Graph.responsive = True
 x_max = min(jhu_data_t0[jhu_data_t0['location'] == 'United States']['since_t0'].max() + 14, 
             jhu_data_t0['since_t0'].max()) 
 
+data_mod_date = get_data_mod_date(data_file_url)
 
 app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n'+
@@ -104,16 +122,18 @@ app.layout = html.Div([
             ),
         ])
     ]),
-        html.P([html.B('Note: '),'the countries shown above were selective for comparative purposes.',
+    html.P([html.I(f'data last updated on {data_mod_date}'),
+            html.Br(), 
+            html.B('Note: '),'the countries shown above were selected for comparative purposes.',
             html.Br(), 
             html.B('data source: '),
-                html.A("https://github.com/CSSEGISandData/COVID-19", 
-                       href="https://github.com/CSSEGISandData/COVID-19"), 
-                html.Br(), 
-                html.B('code source: '),
-                html.A("https://github.com/slstarnes/coronavirus-stats", 
-                       href="https://github.com/slstarnes/coronavirus-stats")
-                ]),
+            html.A("https://github.com/CSSEGISandData/COVID-19", 
+                   href="https://github.com/CSSEGISandData/COVID-19"), 
+            html.Br(), 
+            html.B('code source: '),
+            html.A("https://github.com/slstarnes/coronavirus-stats", 
+                   href="https://github.com/slstarnes/coronavirus-stats")
+    ]),
 ])
 
 if __name__ == '__main__':
