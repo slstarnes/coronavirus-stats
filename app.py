@@ -9,7 +9,6 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats' 
 server = app.server
 
-who_data = pd.read_csv('https://covid.ourworldindata.org/data/full_data.csv')
 jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
                        'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/'+
                        'time_series_19-covid-Confirmed.csv')
@@ -29,8 +28,6 @@ jhu_data_reduced = jhu_data_reduced.groupby('Country/Region').sum()
 jhu_data_reduced = jhu_data_reduced.stack().reset_index()
 jhu_data_reduced.columns = ['location', 'date', 'total_cases']
 jhu_data_reduced['date'] = pd.to_datetime(jhu_data_reduced['date'])
-
-
 
 jhu_data_t0 = jhu_data_reduced.query('total_cases >= @t0_threshold')
 
