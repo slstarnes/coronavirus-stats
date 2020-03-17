@@ -49,7 +49,9 @@ x_max = min(jhu_data_t0[jhu_data_t0['location'] == 'United States']['since_t0'].
 
 
 app.layout = html.Div([
-    html.H1("Coronavirus Confirmed Cases"),
+    dcc.Markdown('# Coronavirus Confirmed Cases\n'+
+                 '_(based on data from Johns Hopkins\' Coronavirus Resource Center - '+
+                 '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
     dcc.Tabs([
         dcc.Tab(label='Line Chart', children=[
             dcc.Graph(
@@ -108,11 +110,13 @@ app.layout = html.Div([
             ),
         ])
     ]),
-        html.P(['data source: ',
+        html.P([html.B('Note: '),'the countries shown above were selective for comparative purposes.',
+            html.Br(), 
+            html.B('data source: '),
                 html.A("https://github.com/CSSEGISandData/COVID-19", 
                        href="https://github.com/CSSEGISandData/COVID-19"), 
                 html.Br(), 
-                'code source: ',
+                html.B('code source: '),
                 html.A("https://github.com/slstarnes/coronavirus-stats", 
                        href="https://github.com/slstarnes/coronavirus-stats")
                 ]),
