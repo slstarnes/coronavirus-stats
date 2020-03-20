@@ -13,6 +13,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats' 
 server = app.server
 
+
 def get_data_mod_date(url):
     r = requests.get(url)
     if r.status_code == 200:
@@ -23,6 +24,7 @@ def get_data_mod_date(url):
         d = d.astimezone(tz)
         return f'{d:%m-%d-%Y @ %-I:%M %p %Z}'
     return
+
 
 jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
                        'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/'+
@@ -51,7 +53,7 @@ jhu_data_t0 = jhu_data_reduced.query('total_cases >= @t0_threshold')
 t0_date = jhu_data_t0.groupby('location').min()['date']
 jhu_data_t0.loc[:, 't0_date'] = jhu_data_t0['location'].map(t0_date)
 jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0['date'] - jhu_data_t0['t0_date']
-jhu_data_t0.loc[:, 'since_t0']  = jhu_data_t0['since_t0'].map(lambda x: x.days)
+jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0['since_t0'].map(lambda x: x.days)
 jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0.loc[:, 'since_t0'].where(jhu_data_t0['since_t0'] > 0, 0)
 
 countries = list(set(jhu_data_t0.sort_values(by='total_cases', ascending=False)['location']))
@@ -67,6 +69,14 @@ app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n'+
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - '+
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
+    dcc.RadioItems(
+        options = [
+            {'label': 'Linear Scale', 'value': 'linear'},
+            {'label': 'Log Scale', 'value': 'log'}
+        ],
+        value='log',
+        labelStyle={'display': 'inline-block'}
+    ),
     dcc.Tabs([
         dcc.Tab(label='Line Chart', children=[
             dcc.Graph(
@@ -135,6 +145,10 @@ app.layout = html.Div([
                    href="https://github.com/slstarnes/coronavirus-stats")
     ]),
 ])
+
+@app.callback(
+    Output()
+)
 
 if __name__ == '__main__':
     app.run_server(debug=True)
