@@ -13,6 +13,7 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats' 
 server = app.server
 
+
 def get_data_mod_date(url):
     r = requests.get(url)
     if r.status_code == 200:
@@ -23,6 +24,7 @@ def get_data_mod_date(url):
         d = d.astimezone(tz)
         return f'{d:%m-%d-%Y @ %-I:%M %p %Z}'
     return
+
 
 jhu_data = pd.read_csv('https://raw.githubusercontent.com/CSSEGISandData/'+
                        'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/'+
@@ -51,7 +53,7 @@ jhu_data_t0 = jhu_data_reduced.query('total_cases >= @t0_threshold')
 t0_date = jhu_data_t0.groupby('location').min()['date']
 jhu_data_t0.loc[:, 't0_date'] = jhu_data_t0['location'].map(t0_date)
 jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0['date'] - jhu_data_t0['t0_date']
-jhu_data_t0.loc[:, 'since_t0']  = jhu_data_t0['since_t0'].map(lambda x: x.days)
+jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0['since_t0'].map(lambda x: x.days)
 jhu_data_t0.loc[:, 'since_t0'] = jhu_data_t0.loc[:, 'since_t0'].where(jhu_data_t0['since_t0'] > 0, 0)
 
 countries = list(set(jhu_data_t0.sort_values(by='total_cases', ascending=False)['location']))
@@ -68,9 +70,9 @@ app.layout = html.Div([
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - '+
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
     dcc.Tabs([
-        dcc.Tab(label='Line Chart', children=[
+        dcc.Tab(label='Line Chart (Log)', children=[
             dcc.Graph(
-                id='coronavirus-t0-line',
+                id='coronavirus-t0-line-log',
                 figure={
                     'data': [
                         dict(
@@ -89,6 +91,33 @@ app.layout = html.Div([
                     'layout': dict(
                         xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
                         yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ]),
+        dcc.Tab(label='Line Chart (Linear)', children=[
+            dcc.Graph(
+                id='coronavirus-t0-line-linear',
+                figure={
+                    'data': [
+                        dict(
+                            x=jhu_data_t0[jhu_data_t0['location'] == i]['since_t0'],
+                            y=jhu_data_t0[jhu_data_t0['location'] == i]['total_cases'],
+                            text=jhu_data_t0[jhu_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            mode='lines',
+                            opacity=1 if i == 'United States' else 0.7,
+                            line={'width': 3 if i == 'United States' else 1.5},
+                            name=i,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
+                        yaxis={'type': 'linear', 'title': 'Total Confirmed Cases'},
                         margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
                         hovermode='compare'
                     )
@@ -124,7 +153,7 @@ app.layout = html.Div([
     ]),
     html.P([html.I(f'data last updated on {data_mod_date}'),
             html.Br(), 
-            html.B('Note: '),'the countries shown above were selected for comparative purposes.',
+            html.B('Note: '), 'the countries shown above were selected for comparative purposes.',
             html.Br(), 
             html.B('data source: '),
             html.A("https://github.com/CSSEGISandData/COVID-19", 
