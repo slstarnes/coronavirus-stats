@@ -78,9 +78,9 @@ app.layout = html.Div([
         labelStyle={'display': 'inline-block'}
     ),
     dcc.Tabs([
-        dcc.Tab(label='Line Chart', children=[
+        dcc.Tab(label='Line Chart (Log)', children=[
             dcc.Graph(
-                id='coronavirus-t0-line',
+                id='coronavirus-t0-line-log',
                 figure={
                     'data': [
                         dict(
@@ -99,6 +99,33 @@ app.layout = html.Div([
                     'layout': dict(
                         xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
                         yaxis={'type': 'log', 'title': 'Total Confirmed Cases'},
+                        margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
+                        hovermode='compare'
+                    )
+                }
+            ),
+        ]),
+        dcc.Tab(label='Line Chart (Linear)', children=[
+            dcc.Graph(
+                id='coronavirus-t0-line-linear',
+                figure={
+                    'data': [
+                        dict(
+                            x=jhu_data_t0[jhu_data_t0['location'] == i]['since_t0'],
+                            y=jhu_data_t0[jhu_data_t0['location'] == i]['total_cases'],
+                            text=jhu_data_t0[jhu_data_t0['location'] == i]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+                            mode='lines',
+                            opacity=1 if i == 'United States' else 0.7,
+                            line={'width': 3 if i == 'United States' else 1.5},
+                            name=i,
+                            hovertemplate='%{text} (Day %{x})<br>'
+                                          'Confirmed Cases: %{y:,.0f}<br>'
+
+                        ) for i in country_filter
+                    ],
+                    'layout': dict(
+                        xaxis={'title': 'Days Since Cases = 100', 'range': [0, x_max], 'zeroline': False},
+                        yaxis={'type': 'linear', 'title': 'Total Confirmed Cases'},
                         margin={'l': 100, 'b': 40, 't': 10, 'r': 10},
                         hovermode='compare'
                     )
@@ -134,7 +161,7 @@ app.layout = html.Div([
     ]),
     html.P([html.I(f'data last updated on {data_mod_date}'),
             html.Br(), 
-            html.B('Note: '),'the countries shown above were selected for comparative purposes.',
+            html.B('Note: '), 'the countries shown above were selected for comparative purposes.',
             html.Br(), 
             html.B('data source: '),
             html.A("https://github.com/CSSEGISandData/COVID-19", 
