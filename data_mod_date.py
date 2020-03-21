@@ -4,8 +4,6 @@ from lxml import html as html_parser
 import pytz
 
 
-
-
 def get_data_mod_date(url):
     r = requests.get(url)
     if r.status_code == 200:

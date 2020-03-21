@@ -1,6 +1,9 @@
 JHU_DATA = 'https://raw.githubusercontent.com/CSSEGISandData/' \
            'COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/' \
            'time_series_19-covid-Confirmed.csv'
+
+# this is the URL to the CSV file in GitHub so you can parse date of last commit.
+# (the REST API required auth)
 JHU_DATA_FILE_URL = 'https://github.com/CSSEGISandData/COVID-19/blob/master/' \
                      'csse_covid_19_data/csse_covid_19_time_series/' \
                      'time_series_19-covid-Confirmed.csv'
