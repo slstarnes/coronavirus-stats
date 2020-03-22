@@ -12,6 +12,7 @@ df = get_data()
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats'
+server = app.server
 
 data_mod_date = get_data_mod_date(JHU_DATA_FILE_URL)
 
