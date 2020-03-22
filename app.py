@@ -19,19 +19,25 @@ data_mod_date = get_data_mod_date(JHU_DATA_FILE_URL)
 x_max = min(df[df['location'] == 'United States']['since_t0'].max() + PLOT_LOOKAHEAD,
             df['since_t0'].max())
 
+countries = df.groupby('location').max()['total_cases'].sort_values(ascending=False).keys().values
+
 app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - ' +
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
-    html.Div(
-        [
-            # dcc.Dropdown(
-            #     id="Country",
-            #     options=[{
-            #         'label': i,
-            #         'value': i
-            #     } for i in country_filter],
-            #     value='United States'),
+    html.Div([
+        html.Div(
+            dcc.Dropdown(
+                id="CountrySelector",
+                options=[{
+                    'label': i,
+                    'value': i
+                } for i in countries],
+                multi=True,
+                value=country_filter),
+            style={'width': '50%',
+                   'display': 'inline-block'}),
+        html.Div(
             dcc.RadioItems(
                 id="LogSelector",
                 options=[
@@ -39,9 +45,12 @@ app.layout = html.Div([
                     {'label': 'Linear Scale', 'value': 'linear'}
                 ],
                 value='log',
-                labelStyle={'display': 'inline-block'})
+                labelStyle={'display': 'inline-block',
+                            'horizontal-align': 'right'}),
+            style={'width': '50%',
+                   'display': 'inline-block'})
         ],
-        style={'width': '25%',
+        style={'width': '100%',
                'display': 'inline-block'}),
     dcc.Graph(id='case-graph',
               style={'display': 'inline-block',
@@ -61,19 +70,18 @@ app.layout = html.Div([
             ]),
 ])
 
-
 @app.callback(
     dash.dependencies.Output('case-graph', 'figure'),
-    [dash.dependencies.Input('LogSelector', 'value')])
-def update_graph(log_selection):
-    countries = country_filter
+    [dash.dependencies.Input('CountrySelector', 'value'),
+     dash.dependencies.Input('LogSelector', 'value')])
+def update_graph(country_selection, log_selection):
     colors = TRACE_COLORS[:len(countries)]
     fig = make_subplots(rows=2, cols=1,
-                        vertical_spacing=0.05,
-                        shared_xaxes=True,
+                        vertical_spacing=0.08,
+                        # shared_xaxes=True,
                         horizontal_spacing=0)
     # line chart
-    for c in country_filter:
+    for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
             'y': df[df['location'] == c]['total_cases'],
@@ -82,19 +90,21 @@ def update_graph(log_selection):
             'mode': 'lines',
             'type': 'scatter',
             'opacity': 1 if c == 'United States' else 0.7,
-            'line': {'width': 3 if c == 'United States' else 1.5},
+            'line': {'width': 3 if c == 'United States' else 2,
+                     'color': TRACE_COLORS[i]},
             'hovertemplate': '%{text} (Day %{x})<br>'
                              'Confirmed Cases: %{y:,.0f}<br>',
         }, 1, 1)
 
     # bar chart
-    for c in country_filter:
+    for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
             'y': df[df['location'] == c]['total_cases'],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'name': c,
             'type': 'bar',
+            'marker_color': TRACE_COLORS[i],
             'opacity': 1 if c == 'United States' else 0.7,
             'hovertemplate': '%{text} (Day %{x})<br>'
                              'Confirmed Cases: %{y:,.0f}<br>',
@@ -107,17 +117,18 @@ def update_graph(log_selection):
         hovermode='x',
         margin={'t': 0.1, 'b': 0.1},
         colorway=colors,
+        template='plotly_white'
     )
 
     y_title = 'Total Confirmed Cases'
     x_title = 'Days Since Cases = 100'
-    fig.update_yaxes(title_text=y_title,
+    fig.update_yaxes(title_text=y_title, showgrid=True,
                      type=log_selection, row=1, col=1)
-    fig.update_yaxes(title_text=y_title,
+    fig.update_yaxes(title_text=y_title, showgrid=True,
                      type=log_selection, row=2, col=1)
-    fig.update_xaxes(title_text=x_title,
+    fig.update_xaxes(title_text=x_title, showgrid=True,
                      range=[0, x_max], row=1, col=1)
-    fig.update_xaxes(title_text=x_title,
+    fig.update_xaxes(title_text=x_title, showgrid=True,
                      range=[0, x_max], row=2, col=1)
 
     return fig
