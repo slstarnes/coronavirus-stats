@@ -5,6 +5,8 @@ from plotly.subplots import make_subplots
 from data import get_data, country_filter, state_filter
 from constants import PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS
 from data_mod_date import get_data_mod_date
+from population_data import population_dict
+
 
 dcc.Graph.responsive = True
 df = get_data('country')
@@ -42,6 +44,19 @@ app.layout = html.Div([
                 multi=True,
                 value=country_filter),
             style={'width': '50%',
+                   'display': 'inline-block'}),
+        html.Div(
+            dcc.RadioItems(
+                id="PerCapitaSelector",
+                options=[
+                    {'label': 'Raw', 'value': 'total_cases'},
+                    {'label': 'By Population (per 100K)', 'value': 'cases_per_100k'}
+                ],
+                value='total_cases',
+                labelStyle={'display': 'inline-block'}),
+            style={
+                   'float': 'right',
+                   'margin-right': '10%',
                    'display': 'inline-block'}),
         html.Div(
             dcc.RadioItems(
@@ -163,8 +178,9 @@ app.layout = html.Div([
 @app.callback(
     dash.dependencies.Output('case-line-graph', 'figure'),
     [dash.dependencies.Input('CountrySelector1', 'value'),
-     dash.dependencies.Input('LogSelector1', 'value')])
-def update_country_line_graph(country_selection, log_selection):
+     dash.dependencies.Input('LogSelector1', 'value'),
+     dash.dependencies.Input('PerCapitaSelector', 'value')])
+def update_country_line_graph(country_selection, log_selection, per_capita_selection):
     colors = TRACE_COLORS[:len(countries)]
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
@@ -173,8 +189,12 @@ def update_country_line_graph(country_selection, log_selection):
     for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
-            'y': df[df['location'] == c]['total_cases'],
+            'y': df[df['location'] == c][per_capita_selection],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+            'customdata': [f'Confirmed Cases: {cases:,}<br> '
+                           f'Population: {pop:,}' for pop, cases in zip(
+                                [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
+                                df[df['location'] == c]['total_cases'].astype(int).values)],
             'name': c,
             'mode': 'lines',
             'type': 'scatter',
@@ -182,7 +202,8 @@ def update_country_line_graph(country_selection, log_selection):
             'line': {'width': 3 if c == 'United States' else 2,
                      'color': TRACE_COLORS[i]},
             'hovertemplate': '%{text} (Day %{x})<br>'
-                             'Confirmed Cases: %{y:,.0f}<br>',
+                             '%{customdata}',
+            'marker_size': df[df['location'] == c]['total_cases'],
         }, 1, 1)
 
     fig['layout'].update(
@@ -264,8 +285,8 @@ def update_state_line_graph(state_selection, log_selection):
             'name': s,
             'mode': 'lines',
             'type': 'scatter',
-            'opacity': 1,# if c == 'United States' else 0.7,
-            'line': {'width': 2, #3 if c == 'United States' else 2,
+            'opacity': 1,
+            'line': {'width': 2,
                      'color': TRACE_COLORS[i]},
             'hovertemplate': '%{text} (Day %{x})<br>'
                              'Confirmed Cases: %{y:,.0f}<br>',
