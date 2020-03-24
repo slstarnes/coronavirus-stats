@@ -1,5 +1,6 @@
 import pandas as pd
 from constants import JHU_DATA
+from population_data import population_dict
 
 data = pd.read_csv(JHU_DATA)
 
@@ -26,6 +27,10 @@ data_reduced = data_reduced.groupby('Country/Region').sum()
 data_reduced = data_reduced.stack().reset_index()
 data_reduced.columns = ['location', 'date', 'total_cases']
 data_reduced['date'] = pd.to_datetime(data_reduced['date'])
+
+data_reduced['population'] = data_reduced['location'].map(population_dict).fillna(0).astype(int)
+data_reduced['cases_per_100k'] = (data_reduced['total_cases'].fillna(0).astype(int)
+                                  .div(data_reduced['population']).mul(100_000))
 
 data_t0 = data_reduced.query('total_cases >= @t0_threshold')
 
