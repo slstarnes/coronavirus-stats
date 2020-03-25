@@ -29,7 +29,10 @@ app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - ' +
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
-
+    html.P([
+        html.I(f'data last updated on {data_mod_date}'),
+        html.Br(),
+    ]),
     html.P([
         '| ',
         html.A('Country Line Plot', href='#country-line'),
@@ -176,9 +179,7 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
-    html.P([html.I(f'data last updated on {data_mod_date}'),
-            html.Br(),
-            html.B('data source: '),
+    html.P([html.B('data source: '),
             html.A("https://github.com/CSSEGISandData/COVID-19",
                    href="https://github.com/CSSEGISandData/COVID-19"),
             html.Br(),
