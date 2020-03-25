@@ -219,10 +219,12 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
             'x': df[df['location'] == c]['since_t0'],
             'y': df[df['location'] == c][per_capita_selection],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-            'customdata': [f'Confirmed Cases: {cases:,}<br> '
-                           f'Population: {pop:,}' for pop, cases in zip(
+            'customdata': [f'Confirmed Cases: {cases:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
-                                df[df['location'] == c]['total_cases'].astype(int).values)],
+                                df[df['location'] == c]['total_cases'].astype(int).values,
+                                df[df['location'] == c]['cases_per_100k'].values)],
             'name': c,
             'mode': 'lines',
             'type': 'scatter',
@@ -312,10 +314,12 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
             'x': df_us[df_us['state'] == s]['date'],
             'y': df_us[df_us['state'] == s][per_capita_selection],
             'text': df_us[df_us['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-            'customdata': [f'Confirmed Cases: {cases:,}<br> '
-                           f'Population: {pop:,}' for pop, cases in zip(
+            'customdata': [f'Confirmed Cases: {cases:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(us_population_dict.get(s, 0))] * len(df_us[df_us['state'] == s]),
-                                df_us[df_us['state'] == s]['total_cases'].astype(int).values)],
+                                df_us[df_us['state'] == s]['total_cases'].astype(int).values,
+                                df_us[df_us['state'] == s]['cases_per_100k'].values)],
             'name': s,
             'mode': 'lines',
             'type': 'scatter',
