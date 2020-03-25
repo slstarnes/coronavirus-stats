@@ -178,8 +178,6 @@ app.layout = html.Div([
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
     html.P([html.I(f'data last updated on {data_mod_date}'),
             html.Br(),
-            html.B('Note: '), 'the countries shown above were selected for comparative purposes.',
-            html.Br(),
             html.B('data source: '),
             html.A("https://github.com/CSSEGISandData/COVID-19",
                    href="https://github.com/CSSEGISandData/COVID-19"),
