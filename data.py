@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from constants import JHU_DATA
 from population_data import population_dict, us_population_dict
 
@@ -13,6 +14,8 @@ country_mapper = {
 
 
 def _drop_cities(place):
+    if place is None or place is np.nan:
+        return None
     if place.find(',') > 0:
         return None
     else:
