@@ -29,6 +29,18 @@ app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - ' +
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
+
+    html.P([
+        '| ',
+        html.A('Country Line Plot', href='#country-line'),
+        ' | ',
+        html.A('Country Bar Plot', href='#country-bar'),
+        ' | ',
+        html.A('State Line Plot', href='#state-line'),
+        ' |',
+    ], style={'textAlign': 'center', 'fontSize': 18}),
+    html.Hr(),
+    html.A(id='country-line'),
     html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
             style={
                 'textAlign': 'center'
@@ -81,6 +93,8 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.Hr(),
+    html.A(id='country-bar'),
     html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
             style={
                 'textAlign': 'center'
@@ -121,6 +135,8 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.Hr(),
+    html.A(id='state-line'),
     html.H3('Confirmed Cases of COVID-19 by State',
             style={
                 'textAlign': 'center'
