@@ -1,6 +1,6 @@
 import pandas as pd
 from constants import JHU_DATA
-from population_data import population_dict
+from population_data import population_dict, us_population_dict
 
 data = pd.read_csv(JHU_DATA)
 
@@ -49,6 +49,10 @@ data_us_reduced = data_us_reduced.groupby('Province/State').max()
 data_us_reduced = data_us_reduced.stack().reset_index()
 data_us_reduced.columns = ['state', 'date', 'total_cases']
 data_us_reduced['date'] = pd.to_datetime(data_us_reduced['date'])
+
+data_us_reduced['population'] = data_us_reduced['state'].map(us_population_dict).fillna(0).astype(int)
+data_us_reduced['cases_per_100k'] = (data_us_reduced['total_cases'].fillna(0).astype(int)
+                                     .div(data_us_reduced['population']).mul(100_000))
 
 data_us_t0 = data_us_reduced.query('total_cases >= 1')
 
