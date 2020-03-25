@@ -5,7 +5,7 @@ from plotly.subplots import make_subplots
 from data import get_data, country_filter, state_filter
 from constants import PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS
 from data_mod_date import get_data_mod_date
-from population_data import population_dict
+from population_data import population_dict, us_population_dict
 
 
 dcc.Graph.responsive = True
@@ -29,6 +29,21 @@ app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - ' +
                  '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
+    html.P([
+        html.I(f'data last updated on {data_mod_date}'),
+        html.Br(),
+    ]),
+    html.P([
+        '| ',
+        html.A('Country Line Plot', href='#country-line'),
+        ' | ',
+        html.A('Country Bar Plot', href='#country-bar'),
+        ' | ',
+        html.A('State Line Plot', href='#state-line'),
+        ' |',
+    ], style={'textAlign': 'center', 'fontSize': 18}),
+    html.Hr(),
+    html.A(id='country-line'),
     html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
             style={
                 'textAlign': 'center'
@@ -81,6 +96,8 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.Hr(),
+    html.A(id='country-bar'),
     html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
             style={
                 'textAlign': 'center'
@@ -121,6 +138,8 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.Hr(),
+    html.A(id='state-line'),
     html.H3('Confirmed Cases of COVID-19 by State',
             style={
                 'textAlign': 'center'
@@ -136,6 +155,19 @@ app.layout = html.Div([
                 multi=True,
                 value=state_filter),
             style={'width': '50%',
+                   'display': 'inline-block'}),
+        html.Div(
+            dcc.RadioItems(
+                id="StatePerCapitaSelector",
+                options=[
+                    {'label': 'Raw', 'value': 'total_cases'},
+                    {'label': 'By Population (per 100K)', 'value': 'cases_per_100k'}
+                ],
+                value='total_cases',
+                labelStyle={'display': 'inline-block'}),
+            style={
+                   'float': 'right',
+                   'margin-right': '10%',
                    'display': 'inline-block'}),
         html.Div(
             dcc.RadioItems(
@@ -160,11 +192,7 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
-    html.P([html.I(f'data last updated on {data_mod_date}'),
-            html.Br(),
-            html.B('Note: '), 'the countries shown above were selected for comparative purposes.',
-            html.Br(),
-            html.B('data source: '),
+    html.P([html.B('data source: '),
             html.A("https://github.com/CSSEGISandData/COVID-19",
                    href="https://github.com/CSSEGISandData/COVID-19"),
             html.Br(),
@@ -191,10 +219,12 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
             'x': df[df['location'] == c]['since_t0'],
             'y': df[df['location'] == c][per_capita_selection],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
-            'customdata': [f'Confirmed Cases: {cases:,}<br> '
-                           f'Population: {pop:,}' for pop, cases in zip(
+            'customdata': [f'Confirmed Cases: {cases:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
-                                df[df['location'] == c]['total_cases'].astype(int).values)],
+                                df[df['location'] == c]['total_cases'].astype(int).values,
+                                df[df['location'] == c]['cases_per_100k'].values)],
             'name': c,
             'mode': 'lines',
             'type': 'scatter',
@@ -267,11 +297,13 @@ def update_country_bar_graph(country_selection, log_selection):
 
     return fig
 
+
 @app.callback(
     dash.dependencies.Output('state-case-line-graph', 'figure'),
     [dash.dependencies.Input('StateSelector', 'value'),
-     dash.dependencies.Input('LogSelector3', 'value')])
-def update_state_line_graph(state_selection, log_selection):
+     dash.dependencies.Input('LogSelector3', 'value'),
+     dash.dependencies.Input('StatePerCapitaSelector', 'value')])
+def update_state_line_graph(state_selection, log_selection, per_capita_selection):
     colors = TRACE_COLORS[:len(states)]
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
@@ -280,16 +312,22 @@ def update_state_line_graph(state_selection, log_selection):
     for i, s in enumerate(state_selection):
         fig.append_trace({
             'x': df_us[df_us['state'] == s]['date'],
-            'y': df_us[df_us['state'] == s]['total_cases'],
+            'y': df_us[df_us['state'] == s][per_capita_selection],
             'text': df_us[df_us['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+            'customdata': [f'Confirmed Cases: {cases:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
+                                [int(us_population_dict.get(s, 0))] * len(df_us[df_us['state'] == s]),
+                                df_us[df_us['state'] == s]['total_cases'].astype(int).values,
+                                df_us[df_us['state'] == s]['cases_per_100k'].values)],
             'name': s,
             'mode': 'lines',
             'type': 'scatter',
             'opacity': 1,
             'line': {'width': 2,
                      'color': TRACE_COLORS[i]},
-            'hovertemplate': '%{text} (Day %{x})<br>'
-                             'Confirmed Cases: %{y:,.0f}<br>',
+            'hovertemplate': '%{text}<br>'
+                             '%{customdata}',
         }, 1, 1)
 
     fig['layout'].update(
