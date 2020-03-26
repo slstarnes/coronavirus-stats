@@ -22,8 +22,8 @@ data_mod_date = get_data_mod_date(JHU_DATA_FILE_URL)
 x_max = min(df[df['location'] == 'United States']['since_t0'].max() + PLOT_LOOKAHEAD,
             df['since_t0'].max())
 
-countries = df.groupby('location').max()['total_cases'].sort_values(ascending=False).keys().values
-states = df_us.groupby('state').max()['total_cases'].sort_values(ascending=False).keys().values
+countries = df.groupby('location').max()['total'].sort_values(ascending=False).keys().values
+states = df_us.groupby('state').max()['total'].sort_values(ascending=False).keys().values
 
 app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
@@ -64,10 +64,10 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="PerCapitaSelector",
                 options=[
-                    {'label': 'Raw', 'value': 'total_cases'},
-                    {'label': 'By Population (per 100K)', 'value': 'cases_per_100k'}
+                    {'label': 'Raw', 'value': 'total'},
+                    {'label': 'By Population (per 100K)', 'value': 'per_100k'}
                 ],
-                value='total_cases',
+                value='total',
                 labelStyle={'display': 'inline-block'}),
             style={
                    'float': 'right',
@@ -160,10 +160,10 @@ app.layout = html.Div([
             dcc.RadioItems(
                 id="StatePerCapitaSelector",
                 options=[
-                    {'label': 'Raw', 'value': 'total_cases'},
-                    {'label': 'By Population (per 100K)', 'value': 'cases_per_100k'}
+                    {'label': 'Raw', 'value': 'total'},
+                    {'label': 'By Population (per 100K)', 'value': 'per_100k'}
                 ],
-                value='total_cases',
+                value='total',
                 labelStyle={'display': 'inline-block'}),
             style={
                    'float': 'right',
@@ -223,8 +223,8 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
                            f'Population: {pop:,}<br>'
                            f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
-                                df[df['location'] == c]['total_cases'].astype(int).values,
-                                df[df['location'] == c]['cases_per_100k'].values)],
+                                df[df['location'] == c]['total'].astype(int).values,
+                                df[df['location'] == c]['per_100k'].values)],
             'name': c,
             'mode': 'lines',
             'type': 'scatter',
@@ -233,7 +233,7 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
                      'color': TRACE_COLORS[i]},
             'hovertemplate': '%{text} (Day %{x})<br>'
                              '%{customdata}',
-            'marker_size': df[df['location'] == c]['total_cases'],
+            'marker_size': df[df['location'] == c]['total'],
         }, 1, 1)
 
     fig['layout'].update(
@@ -269,7 +269,7 @@ def update_country_bar_graph(country_selection, log_selection):
     for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
-            'y': df[df['location'] == c]['total_cases'],
+            'y': df[df['location'] == c]['total'],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'name': c,
             'type': 'bar',
@@ -318,8 +318,8 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
                            f'Population: {pop:,}<br>'
                            f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(us_population_dict.get(s, 0))] * len(df_us[df_us['state'] == s]),
-                                df_us[df_us['state'] == s]['total_cases'].astype(int).values,
-                                df_us[df_us['state'] == s]['cases_per_100k'].values)],
+                                df_us[df_us['state'] == s]['total'].astype(int).values,
+                                df_us[df_us['state'] == s]['per_100k'].values)],
             'name': s,
             'mode': 'lines',
             'type': 'scatter',
