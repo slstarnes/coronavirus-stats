@@ -11,6 +11,8 @@ from population_data import population_dict, us_population_dict
 dcc.Graph.responsive = True
 df = get_data('country')
 df_us = get_data('state')
+df_deaths = get_data('country', deaths=True)
+df_deaths_us = get_data('state')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)

@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
-from constants import JHU_DATA
+from constants import JHU_DATA, JHU_DEATH_DATA
 from population_data import population_dict, us_population_dict
 
 data = pd.read_csv(JHU_DATA)
+death_data = pd.read_csv(JHU_DEATH_DATA)
 
 t0_threshold = 100
 country_filter = ['China', 'South Korea', 'United States', 'Italy', 'France', 'Spain']
@@ -54,12 +55,19 @@ data_t0 = data_processing(data, population_dict,
                           t0_threshold=100)
 data_us_t0 = data_processing(data, us_population_dict,
                              t0_threshold=1, states_data=True)
+deaths_data_t0 = data_processing(death_data, population_dict, t0_threshold=10)
+deaths_data_us_t0 = data_processing(death_data, us_population_dict,
+                                    t0_threshold=1, states_data=True, )
 
 
-def get_data(data_set='country'):
-    if data_set == 'country':
-        # data_t0.to_csv('data_t0_2.csv')
-        return data_t0
-    elif data_set == 'state':
-        # data_us_t0.to_csv('data_us_t0_2.csv')
-        return data_us_t0
+def get_data(locale='country', deaths=False):
+    if locale == 'country':
+        if deaths:
+            return deaths_data_t0
+        else:
+            return data_t0
+    elif locale == 'state':
+        if deaths:
+            return deaths_data_us_t0
+        else:
+            return data_us_t0

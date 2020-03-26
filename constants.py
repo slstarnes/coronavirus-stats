@@ -6,6 +6,9 @@
 JHU_DATA = 'https://www.soothsawyer.com/wp-content/uploads/' \
            '2020/03/time_series_19-covid-Confirmed.csv'
 
+JHU_DEATH_DATA = 'https://www.soothsawyer.com/wp-content/uploads/2020/03/' \
+                 'time_series_19-covid-Deaths.csv'
+
 # this is the URL to the CSV file in GitHub so you can parse date of last commit.
 # (the REST API required auth)
 JHU_DATA_FILE_URL = 'https://github.com/CSSEGISandData/COVID-19/blob/master/' \
