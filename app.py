@@ -61,6 +61,7 @@ app.layout = html.Div([
         html.B('Note: '),
         'You can select add/remove countries/states via the selector box.'
     ]),
+    html.A(id='country-line'),
     html.P([
         '| ',
         html.A('Cases by Country', href='#country-line'),
@@ -68,10 +69,11 @@ app.layout = html.Div([
         html.A('Deaths by Country', href='#country-deaths'),
         ' | ',
         html.A('Cases by State', href='#state-line'),
+        ' | ',
+        html.A('Deaths by State', href='#state-deaths'),
         ' |',
     ], style={'textAlign': 'center', 'fontSize': 18}),
     html.Hr(),
-    html.A(id='country-line'),
     html.H3(f'Confirmed Cases of COVID-19 by Country Since Reaching {COUNTRY_T0_CASES_THRESHOLD} Cases',
             style={
                 'textAlign': 'center'
@@ -125,8 +127,19 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
-    html.Hr(),
     html.A(id='country-deaths'),
+    html.P([
+        '| ',
+        html.A('Cases by Country', href='#country-line'),
+        ' | ',
+        html.A('Deaths by Country', href='#country-deaths'),
+        ' | ',
+        html.A('Cases by State', href='#state-line'),
+        ' | ',
+        html.A('Deaths by State', href='#state-deaths'),
+        ' |',
+    ], style={'textAlign': 'center', 'fontSize': 18}),
+    html.Hr(),
     html.H3(f'Deaths due to COVID-19 by Country Since Reaching {COUNTRY_T0_CASES_THRESHOLD} Cases',
             style={
                 'textAlign': 'center'
@@ -174,15 +187,25 @@ app.layout = html.Div([
     ],
         style={'width': '100%',
                'display': 'inline-block'}),
-
     html.Div([
         dcc.Graph(id='country-death-graph',
                   style={'display': 'inline-block',
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
-    html.Hr(),
     html.A(id='state-line'),
+    html.P([
+        '| ',
+        html.A('Cases by Country', href='#country-line'),
+        ' | ',
+        html.A('Deaths by Country', href='#country-deaths'),
+        ' | ',
+        html.A('Cases by State', href='#state-line'),
+        ' | ',
+        html.A('Deaths by State', href='#state-deaths'),
+        ' |',
+    ], style={'textAlign': 'center', 'fontSize': 18}),
+    html.Hr(),
     html.H3('Confirmed Cases of COVID-19 by State',
             style={
                 'textAlign': 'center'
@@ -236,6 +259,20 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.A(id='state-deaths'),
+    html.P([
+        '| ',
+        html.A('Cases by Country', href='#country-line'),
+        ' | ',
+        html.A('Deaths by Country', href='#country-deaths'),
+        ' | ',
+        html.A('Cases by State', href='#state-line'),
+        ' | ',
+        html.A('Deaths by State', href='#state-deaths'),
+        ' |',
+    ], style={'textAlign': 'center', 'fontSize': 18}),
+    html.Hr(),
+
     html.H3('Deaths of COVID-19 by State',
             style={
                 'textAlign': 'center'
