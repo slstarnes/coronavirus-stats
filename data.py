@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
-from constants import JHU_DATA, JHU_DEATH_DATA
+from constants import (JHU_DATA, JHU_DEATH_DATA, COUNTRY_T0_CASES_THRESHOLD,
+                       STATE_T0_CASES_THRESHOLD, COUNTRY_T0_DEATHS_THRESHOLD,
+                       STATE_T0_DEATHS_THRESHOLD, CASES_PER_CAPITA_VALUE,
+                       DEATHS_PER_CAPITA_VALUE)
 from population_data import population_dict, us_population_dict
 
 data = pd.read_csv(JHU_DATA)
 death_data = pd.read_csv(JHU_DEATH_DATA)
 
-t0_threshold = 100
 country_filter = ['China', 'South Korea', 'United States', 'Italy', 'France', 'Spain']
 country_mapper = {
         'Korea, South': 'South Korea',
@@ -25,7 +27,7 @@ def _drop_cities(place):
 
 
 def data_processing(df, pop_dict, t0_threshold=100,
-                    population_group_size=100_000, states_data=False):
+                    population_group_size=CASES_PER_CAPITA_VALUE, states_data=False):
     loc = 'location' if not states_data else 'state'
     df['Country/Region'] = df['Country/Region'].map(country_mapper).fillna(df['Country/Region'])
     if states_data:
@@ -35,13 +37,13 @@ def data_processing(df, pop_dict, t0_threshold=100,
         df = df.groupby('Province/State').max()
     else:
         df = df.drop(columns=['Lat', 'Long', 'Province/State'])
-        df = df.groupby('Country/Region').max()
+        df = df.groupby('Country/Region').sum()
     df = df.stack().reset_index()
     df.columns = [loc, 'date', 'total']
     df['date'] = pd.to_datetime(df['date'])
     df['population'] = df[loc].map(pop_dict).fillna(1).astype(int)
-    df['per_100k'] = (df['total'].fillna(0).astype(int)
-                      .div(df['population']).mul(population_group_size))
+    df['per_capita'] = (df['total'].fillna(0).astype(int)
+                        .div(df['population']).mul(population_group_size))
     df = df.query('total >= @t0_threshold')
     t0_date = df.groupby(loc).min()['date']
     df.loc[:, 't0_date'] = pd.to_datetime(df[loc].map(t0_date))
@@ -52,12 +54,21 @@ def data_processing(df, pop_dict, t0_threshold=100,
 
 
 data_t0 = data_processing(data, population_dict,
-                          t0_threshold=100)
+                          t0_threshold=COUNTRY_T0_CASES_THRESHOLD)
 data_us_t0 = data_processing(data, us_population_dict,
-                             t0_threshold=1, states_data=True)
-deaths_data_t0 = data_processing(death_data, population_dict, t0_threshold=10)
+                             t0_threshold=STATE_T0_CASES_THRESHOLD, states_data=True)
+deaths_data_t0 = data_processing(death_data, population_dict, t0_threshold=COUNTRY_T0_DEATHS_THRESHOLD)
 deaths_data_us_t0 = data_processing(death_data, us_population_dict,
-                                    t0_threshold=1, states_data=True, )
+                                    t0_threshold=STATE_T0_DEATHS_THRESHOLD, states_data=True)
+
+data_t0 = data_t0.set_index(['location', 'date'])
+data_t0['deaths_total'] = (deaths_data_t0[['location', 'date', 'total']]
+                     .set_index(['location', 'date']).rename(columns={'total': 'deaths'}))
+data_t0['deaths_total'] = data_t0['deaths_total'].fillna(0)
+data_t0 = data_t0.reset_index()
+
+data_t0['deaths_per_capita'] = (data_t0['deaths_total'].fillna(0).astype(int)
+                    .div(data_t0['population']).mul(DEATHS_PER_CAPITA_VALUE))
 
 
 def get_data(locale='country', deaths=False):

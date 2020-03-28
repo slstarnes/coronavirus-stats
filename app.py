@@ -3,16 +3,14 @@ import dash_core_components as dcc
 import dash_html_components as html
 from plotly.subplots import make_subplots
 from data import get_data, country_filter, state_filter
-from constants import PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS
+from constants import (PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS, COUNTRY_T0_CASES_THRESHOLD)
 from data_mod_date import get_data_mod_date
 from population_data import population_dict, us_population_dict
 
 
 dcc.Graph.responsive = True
-df = get_data('country')
-df_us = get_data('state')
-df_deaths = get_data('country', deaths=True)
-df_deaths_us = get_data('state')
+data = get_data('country')
+data_us = get_data('state')
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -21,11 +19,11 @@ server = app.server
 
 data_mod_date = get_data_mod_date(JHU_DATA_FILE_URL)
 
-x_max = min(df[df['location'] == 'United States']['since_t0'].max() + PLOT_LOOKAHEAD,
-            df['since_t0'].max())
+x_max = min(data[data['location'] == 'United States']['since_t0'].max() + PLOT_LOOKAHEAD,
+            data['since_t0'].max())
 
-countries = df.groupby('location').max()['total'].sort_values(ascending=False).keys().values
-states = df_us.groupby('state').max()['total'].sort_values(ascending=False).keys().values
+countries = data.groupby('location').max()['total'].sort_values(ascending=False).keys().values
+states = data_us.groupby('state').max()['total'].sort_values(ascending=False).keys().values
 
 app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
@@ -37,16 +35,16 @@ app.layout = html.Div([
     ]),
     html.P([
         '| ',
-        html.A('Country Line Plot', href='#country-line'),
+        html.A('Cases by Country', href='#country-line'),
         ' | ',
-        html.A('Country Bar Plot', href='#country-bar'),
+        html.A('Deaths by Country', href='#country-deaths'),
         ' | ',
-        html.A('State Line Plot', href='#state-line'),
+        html.A('Cases by State', href='#state-line'),
         ' |',
     ], style={'textAlign': 'center', 'fontSize': 18}),
     html.Hr(),
     html.A(id='country-line'),
-    html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
+    html.H3(f'Confirmed Cases of COVID-19 by Country Since Reaching {COUNTRY_T0_CASES_THRESHOLD} Cases',
             style={
                 'textAlign': 'center'
             }),
@@ -64,10 +62,10 @@ app.layout = html.Div([
                    'display': 'inline-block'}),
         html.Div(
             dcc.RadioItems(
-                id="PerCapitaSelector",
+                id="PerCapitaSelector1",
                 options=[
                     {'label': 'Raw', 'value': 'total'},
-                    {'label': 'By Population (per 100K)', 'value': 'per_100k'}
+                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
                 ],
                 value='total',
                 labelStyle={'display': 'inline-block'}),
@@ -99,8 +97,8 @@ app.layout = html.Div([
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
     html.Hr(),
-    html.A(id='country-bar'),
-    html.H3('Confirmed Cases of COVID-19 by Country Since Reaching 100 Cases',
+    html.A(id='country-deaths'),
+    html.H3(f'Deaths due to COVID-19 by Country Since Reaching {COUNTRY_T0_CASES_THRESHOLD} Cases',
             style={
                 'textAlign': 'center'
             }),
@@ -115,6 +113,19 @@ app.layout = html.Div([
                 multi=True,
                 value=country_filter),
             style={'width': '50%',
+                   'display': 'inline-block'}),
+        html.Div(
+            dcc.RadioItems(
+                id="PerCapitaSelector2",
+                options=[
+                    {'label': 'Raw', 'value': 'total'},
+                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
+                ],
+                value='total',
+                labelStyle={'display': 'inline-block'}),
+            style={
+                   'float': 'right',
+                   'margin-right': '10%',
                    'display': 'inline-block'}),
         html.Div(
             dcc.RadioItems(
@@ -135,7 +146,7 @@ app.layout = html.Div([
                'display': 'inline-block'}),
 
     html.Div([
-        dcc.Graph(id='case-bar-graph',
+        dcc.Graph(id='country-death-graph',
                   style={'display': 'inline-block',
                          'height': '70vh',
                          'width': '100%'}),
@@ -160,10 +171,10 @@ app.layout = html.Div([
                    'display': 'inline-block'}),
         html.Div(
             dcc.RadioItems(
-                id="StatePerCapitaSelector",
+                id="StatePerCapitaSelector1",
                 options=[
                     {'label': 'Raw', 'value': 'total'},
-                    {'label': 'By Population (per 100K)', 'value': 'per_100k'}
+                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
                 ],
                 value='total',
                 labelStyle={'display': 'inline-block'}),
@@ -209,8 +220,8 @@ app.layout = html.Div([
     dash.dependencies.Output('case-line-graph', 'figure'),
     [dash.dependencies.Input('CountrySelector1', 'value'),
      dash.dependencies.Input('LogSelector1', 'value'),
-     dash.dependencies.Input('PerCapitaSelector', 'value')])
-def update_country_line_graph(country_selection, log_selection, per_capita_selection):
+     dash.dependencies.Input('PerCapitaSelector1', 'value')])
+def update_country_line_graph(country_selection, log_selection, per_capita_selection, df=data):
     colors = TRACE_COLORS[:len(countries)]
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
@@ -226,7 +237,7 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
                            f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
                                 df[df['location'] == c]['total'].astype(int).values,
-                                df[df['location'] == c]['per_100k'].values)],
+                                df[df['location'] == c]['per_capita'].values)],
             'name': c,
             'mode': 'lines',
             'type': 'scatter',
@@ -248,7 +259,7 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
     )
 
     y_title = 'Total Confirmed Cases'
-    x_title = 'Days Since Cases = 100'
+    x_title = f'Days Since Cases = {COUNTRY_T0_CASES_THRESHOLD}'
     fig.update_yaxes(title_text=y_title, showgrid=True,
                      type=log_selection, row=1, col=1)
     fig.update_xaxes(title_text=x_title, showgrid=True,
@@ -258,27 +269,40 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
 
 
 @app.callback(
-    dash.dependencies.Output('case-bar-graph', 'figure'),
+    dash.dependencies.Output('country-death-graph', 'figure'),
     [dash.dependencies.Input('CountrySelector2', 'value'),
-     dash.dependencies.Input('LogSelector2', 'value')])
-def update_country_bar_graph(country_selection, log_selection):
+     dash.dependencies.Input('LogSelector2', 'value'),
+     dash.dependencies.Input('PerCapitaSelector2', 'value')])
+def update_country_death_graph(country_selection, log_selection, per_capita_selection, df=data):
+    per_capita_selection = 'deaths_' + per_capita_selection
     colors = TRACE_COLORS[:len(countries)]
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
                         horizontal_spacing=0)
 
-    # bar chart
+    df = df.query('deaths_total > 0')
+
+    # line chart
     for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
-            'y': df[df['location'] == c]['total'],
+            'y': df[df['location'] == c][per_capita_selection],
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+            'customdata': [f'Deaths: {deaths:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Deaths Per 1M: {cpc:.2f}' for pop, deaths, cpc in zip(
+                [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
+                df[df['location'] == c]['deaths_total'].astype(int).values,
+                df[df['location'] == c]['deaths_per_capita'].values)],
             'name': c,
-            'type': 'bar',
-            'marker_color': TRACE_COLORS[i],
+            'mode': 'lines',
+            'type': 'scatter',
             'opacity': 1 if c == 'United States' else 0.7,
+            'line': {'width': 3 if c == 'United States' else 2,
+                     'color': TRACE_COLORS[i]},
             'hovertemplate': '%{text} (Day %{x})<br>'
-                             'Confirmed Cases: %{y:,.0f}<br>',
+                             '%{customdata}',
+            # 'marker_size': df[df['location'] == c]['total'],
         }, 1, 1)
 
     fig['layout'].update(
@@ -290,8 +314,8 @@ def update_country_bar_graph(country_selection, log_selection):
         template='plotly_white'
     )
 
-    y_title = 'Total Confirmed Cases'
-    x_title = 'Days Since Cases = 100'
+    y_title = 'Total Deaths'
+    x_title = f'Days Since Cases = {COUNTRY_T0_CASES_THRESHOLD}'
     fig.update_yaxes(title_text=y_title, showgrid=True,
                      type=log_selection, row=1, col=1)
     fig.update_xaxes(title_text=x_title, showgrid=True,
@@ -304,8 +328,8 @@ def update_country_bar_graph(country_selection, log_selection):
     dash.dependencies.Output('state-case-line-graph', 'figure'),
     [dash.dependencies.Input('StateSelector', 'value'),
      dash.dependencies.Input('LogSelector3', 'value'),
-     dash.dependencies.Input('StatePerCapitaSelector', 'value')])
-def update_state_line_graph(state_selection, log_selection, per_capita_selection):
+     dash.dependencies.Input('StatePerCapitaSelector1', 'value')])
+def update_state_line_graph(state_selection, log_selection, per_capita_selection, df=data_us):
     colors = TRACE_COLORS[:len(states)]
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
@@ -313,15 +337,15 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
     # line chart
     for i, s in enumerate(state_selection):
         fig.append_trace({
-            'x': df_us[df_us['state'] == s]['date'],
-            'y': df_us[df_us['state'] == s][per_capita_selection],
-            'text': df_us[df_us['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+            'x': df[df['state'] == s]['date'],
+            'y': df[df['state'] == s][per_capita_selection],
+            'text': df[df['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'customdata': [f'Confirmed Cases: {cases:,}<br>'
                            f'Population: {pop:,}<br>'
                            f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
-                                [int(us_population_dict.get(s, 0))] * len(df_us[df_us['state'] == s]),
-                                df_us[df_us['state'] == s]['total'].astype(int).values,
-                                df_us[df_us['state'] == s]['per_100k'].values)],
+                                [int(us_population_dict.get(s, 0))] * len(df[df['state'] == s]),
+                                df[df['state'] == s]['total'].astype(int).values,
+                                df[df['state'] == s]['per_capita'].values)],
             'name': s,
             'mode': 'lines',
             'type': 'scatter',
