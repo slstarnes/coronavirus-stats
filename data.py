@@ -44,20 +44,22 @@ def data_processing(df, pop_dict, t0_threshold=100,
     df['population'] = df[loc].map(pop_dict).fillna(1).astype(int)
     df['per_capita'] = (df['total'].fillna(0).astype(int)
                         .div(df['population']).mul(population_group_size))
-    df = df.query('total >= @t0_threshold')
-    t0_date = df.groupby(loc).min()['date']
-    df.loc[:, 't0_date'] = pd.to_datetime(df[loc].map(t0_date))
-    df.loc[:, 'since_t0'] = df['date'] - df['t0_date']
-    df.loc[:, 'since_t0'] = df['since_t0'].map(lambda x: x.days)
-    df.loc[:, 'since_t0'] = df.loc[:, 'since_t0'].where(df['since_t0'] > 0, 0)
+    if t0_threshold:
+        df = df.query('total >= @t0_threshold')
+        t0_date = df.groupby(loc).min()['date']
+        df.loc[:, 't0_date'] = pd.to_datetime(df[loc].map(t0_date))
+        df.loc[:, 'since_t0'] = df['date'] - df['t0_date']
+        df.loc[:, 'since_t0'] = df['since_t0'].map(lambda x: x.days)
+        df.loc[:, 'since_t0'] = df.loc[:, 'since_t0'].where(df['since_t0'] > 0, 0)
     return df
 
 
 data_t0 = data_processing(data, population_dict,
                           t0_threshold=COUNTRY_T0_CASES_THRESHOLD)
-data_us_t0 = data_processing(state_data, us_population_dict,
-                             t0_threshold=STATE_T0_CASES_THRESHOLD, states_data=True)
-deaths_data_t0 = data_processing(death_data, population_dict, t0_threshold=COUNTRY_T0_DEATHS_THRESHOLD)
+data_us = data_processing(state_data, us_population_dict,
+                             t0_threshold=None, states_data=True)
+deaths_data_t0 = data_processing(death_data, population_dict,
+                                 t0_threshold=None)
 # deaths_data_us_t0 = data_processing(death_data, us_population_dict,
 #                                     t0_threshold=STATE_T0_DEATHS_THRESHOLD, states_data=True)
 
@@ -66,9 +68,13 @@ data_t0['deaths_total'] = (deaths_data_t0[['location', 'date', 'total']]
                      .set_index(['location', 'date']).rename(columns={'total': 'deaths'}))
 data_t0['deaths_total'] = data_t0['deaths_total'].fillna(0)
 data_t0 = data_t0.reset_index()
-
 data_t0['deaths_per_capita'] = (data_t0['deaths_total'].fillna(0).astype(int)
                     .div(data_t0['population']).mul(DEATHS_PER_CAPITA_VALUE))
+
+data_us = data_us.rename(columns={'deaths': 'deaths_total'})
+data_us['deaths_per_capita'] = (data_us['deaths_total'].fillna(0).astype(int)
+                    .div(data_us['population']).mul(DEATHS_PER_CAPITA_VALUE))
+
 
 
 def get_data(locale='country', deaths=False):
@@ -79,6 +85,6 @@ def get_data(locale='country', deaths=False):
             return data_t0
     elif locale == 'state':
         if deaths:
-            return
+            return data_us
         else:
-            return data_us_t0
+            return data_us

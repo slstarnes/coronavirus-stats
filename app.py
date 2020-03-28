@@ -228,6 +228,59 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
+    html.H3('Deaths of COVID-19 by State',
+            style={
+                'textAlign': 'center'
+            }),
+    html.Div([
+        html.Div(
+            dcc.Dropdown(
+                id="StateSelector2",
+                options=[{
+                    'label': i,
+                    'value': i
+                } for i in states],
+                multi=True,
+                value=state_filter),
+            style={'width': '50%',
+                   'display': 'inline-block'}),
+        html.Div(
+            dcc.RadioItems(
+                id="StatePerCapitaSelector2",
+                options=[
+                    {'label': 'Raw', 'value': 'total'},
+                    {'label': f'By Population (per {human_format(DEATHS_PER_CAPITA_VALUE)})',
+                     'value': 'per_capita'}
+                ],
+                value='total',
+                labelStyle={'display': 'inline-block'}),
+            style={
+                   'float': 'right',
+                   'margin-right': '10%',
+                   'display': 'inline-block'}),
+        html.Div(
+            dcc.RadioItems(
+                id="LogSelector4",
+                options=[
+                    {'label': 'Log Scale', 'value': 'log'},
+                    {'label': 'Linear Scale', 'value': 'linear'}
+                ],
+                value='log',
+                labelStyle={'display': 'inline-block',
+                            'horizontal-align': 'right'}),
+            style={
+                'float': 'right',
+                'margin-right': '10%',
+                'display': 'inline-block'})
+        ],
+        style={'width': '100%',
+               'display': 'inline-block'}),
+    html.Div([
+        dcc.Graph(id='state-death-line-graph',
+                  style={'display': 'inline-block',
+                         'height': '70vh',
+                         'width': '100%'}),
+    ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
     html.P([html.B('data sources: '),
             html.A("https://github.com/CSSEGISandData/COVID-19",
                    href="https://github.com/CSSEGISandData/COVID-19"),
@@ -393,6 +446,60 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
     )
 
     y_title = 'Total Confirmed Cases'
+    x_title = 'Date'
+    fig.update_yaxes(title_text=y_title, showgrid=True,
+                     type=log_selection, row=1, col=1)
+    fig.update_xaxes(title_text=x_title, showgrid=True,
+                     row=1, col=1)
+
+    return fig
+
+
+@app.callback(
+    dash.dependencies.Output('state-death-line-graph', 'figure'),
+    [dash.dependencies.Input('StateSelector2', 'value'),
+     dash.dependencies.Input('LogSelector4', 'value'),
+     dash.dependencies.Input('StatePerCapitaSelector2', 'value')])
+def update_state_death_graph(state_selection, log_selection, per_capita_selection, df=data_us):
+    per_capita_selection = 'deaths_' + per_capita_selection
+    colors = TRACE_COLORS[:len(states)]
+    fig = make_subplots(rows=1, cols=1,
+                        vertical_spacing=0.08,
+                        horizontal_spacing=0)
+    per_x = human_format(DEATHS_PER_CAPITA_VALUE)
+
+    df = df.query('deaths_total > 0')
+    for i, s in enumerate(state_selection):
+        fig.append_trace({
+            'x': df[df['state'] == s]['date'],
+            'y': df[df['state'] == s][per_capita_selection],
+            'text': df[df['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
+            'customdata': [f'Confirmed Cases: {cases:,}<br>'
+                           f'Population: {pop:,}<br>'
+                           f'Cases Per {per_x}: {cpc:.2f}' for pop, cases, cpc in zip(
+                                [int(us_population_dict.get(s, 0))] * len(df[df['state'] == s]),
+                                df[df['state'] == s]['deaths_total'].astype(int).values,
+                                df[df['state'] == s]['deaths_per_capita'].values)],
+            'name': s,
+            'mode': 'lines',
+            'type': 'scatter',
+            'opacity': 1,
+            'line': {'width': 2,
+                     'color': TRACE_COLORS[i]},
+            'hovertemplate': '%{text}<br>'
+                             '%{customdata}',
+        }, 1, 1)
+
+    fig['layout'].update(
+        showlegend=True,
+        legend_title='<b> Legend <b>',
+        hovermode='x',
+        margin={'t': 0.1, 'b': 0.1},
+        colorway=colors,
+        template='plotly_white'
+    )
+
+    y_title = 'Total Dates'
     x_title = 'Date'
     fig.update_yaxes(title_text=y_title, showgrid=True,
                      type=log_selection, row=1, col=1)
