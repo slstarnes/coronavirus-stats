@@ -9,11 +9,14 @@ JHU_DATA = 'https://www.soothsawyer.com/wp-content/uploads/' \
 JHU_DEATH_DATA = 'https://www.soothsawyer.com/wp-content/uploads/2020/03/' \
                  'time_series_19-covid-Deaths.csv'
 
+NYT_STATE_DATA = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv'
+
 # this is the URL to the CSV file in GitHub so you can parse date of last commit.
 # (the REST API required auth)
 JHU_DATA_FILE_URL = 'https://github.com/CSSEGISandData/COVID-19/blob/master/' \
                      'csse_covid_19_data/csse_covid_19_time_series/' \
                      'time_series_covid19_confirmed_global.csv'
+NYT_STATE_DATA_FILE_URL = 'https://github.com/nytimes/covid-19-data/blob/master/us-states.csv'
 
 COUNTRY_T0_CASES_THRESHOLD = 100
 STATE_T0_CASES_THRESHOLD = 1

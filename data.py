@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
-from constants import (JHU_DATA, JHU_DEATH_DATA, COUNTRY_T0_CASES_THRESHOLD,
+from constants import (JHU_DATA, JHU_DEATH_DATA, NYT_STATE_DATA,
+                       COUNTRY_T0_CASES_THRESHOLD,
                        STATE_T0_CASES_THRESHOLD, COUNTRY_T0_DEATHS_THRESHOLD,
                        STATE_T0_DEATHS_THRESHOLD, CASES_PER_CAPITA_VALUE,
                        DEATHS_PER_CAPITA_VALUE)
 from population_data import population_dict, us_population_dict
 
 data = pd.read_csv(JHU_DATA)
+state_data = pd.read_csv(NYT_STATE_DATA)
 death_data = pd.read_csv(JHU_DEATH_DATA)
 
 country_filter = ['China', 'South Korea', 'United States', 'Italy', 'France', 'Spain']
@@ -29,17 +31,15 @@ def _drop_cities(place):
 def data_processing(df, pop_dict, t0_threshold=100,
                     population_group_size=CASES_PER_CAPITA_VALUE, states_data=False):
     loc = 'location' if not states_data else 'state'
-    df['Country/Region'] = df['Country/Region'].map(country_mapper).fillna(df['Country/Region'])
     if states_data:
-        df = df[df['Country/Region'] == 'United States']
-        df['Province/State'] = df['Province/State'].map(_drop_cities).dropna()
-        df = df.drop(columns=['Lat', 'Long', 'Country/Region'])
-        df = df.groupby('Province/State').max()
+        df = df.drop(columns=['fips'])
+        df = df.rename(columns={'cases': 'total'})
     else:
+        df['Country/Region'] = df['Country/Region'].map(country_mapper).fillna(df['Country/Region'])
         df = df.drop(columns=['Lat', 'Long', 'Province/State'])
         df = df.groupby('Country/Region').sum()
-    df = df.stack().reset_index()
-    df.columns = [loc, 'date', 'total']
+        df = df.stack().reset_index()
+        df.columns = [loc, 'date', 'total']
     df['date'] = pd.to_datetime(df['date'])
     df['population'] = df[loc].map(pop_dict).fillna(1).astype(int)
     df['per_capita'] = (df['total'].fillna(0).astype(int)
@@ -55,11 +55,11 @@ def data_processing(df, pop_dict, t0_threshold=100,
 
 data_t0 = data_processing(data, population_dict,
                           t0_threshold=COUNTRY_T0_CASES_THRESHOLD)
-data_us_t0 = data_processing(data, us_population_dict,
+data_us_t0 = data_processing(state_data, us_population_dict,
                              t0_threshold=STATE_T0_CASES_THRESHOLD, states_data=True)
 deaths_data_t0 = data_processing(death_data, population_dict, t0_threshold=COUNTRY_T0_DEATHS_THRESHOLD)
-deaths_data_us_t0 = data_processing(death_data, us_population_dict,
-                                    t0_threshold=STATE_T0_DEATHS_THRESHOLD, states_data=True)
+# deaths_data_us_t0 = data_processing(death_data, us_population_dict,
+#                                     t0_threshold=STATE_T0_DEATHS_THRESHOLD, states_data=True)
 
 data_t0 = data_t0.set_index(['location', 'date'])
 data_t0['deaths_total'] = (deaths_data_t0[['location', 'date', 'total']]
@@ -79,6 +79,6 @@ def get_data(locale='country', deaths=False):
             return data_t0
     elif locale == 'state':
         if deaths:
-            return deaths_data_us_t0
+            return
         else:
             return data_us_t0

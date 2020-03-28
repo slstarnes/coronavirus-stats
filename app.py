@@ -340,6 +340,8 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
                         vertical_spacing=0.08,
                         horizontal_spacing=0)
     per_x = human_format(CASES_PER_CAPITA_VALUE)
+    # filter out all values less than 2. this is to get rid of the weeks of NY having 1 case
+    df = df.query('total > 1')
     for i, s in enumerate(state_selection):
         fig.append_trace({
             'x': df[df['state'] == s]['date'],
