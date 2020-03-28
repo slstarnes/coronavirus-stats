@@ -3,7 +3,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from plotly.subplots import make_subplots
 from data import get_data, country_filter, state_filter
-from constants import (PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS,
+from constants import (PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, JHU_DEATH_DATA_FILE_URL,
+                       NYT_STATE_DATA_FILE_URL, TRACE_COLORS,
                        COUNTRY_T0_CASES_THRESHOLD, CASES_PER_CAPITA_VALUE,
                        DEATHS_PER_CAPITA_VALUE)
 from data_mod_date import get_data_mod_date
@@ -20,7 +21,22 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 app.title = 'Coronavirus Stats'
 server = app.server
 
-data_mod_date = get_data_mod_date(JHU_DATA_FILE_URL)
+data_mod_date_country = get_data_mod_date(JHU_DATA_FILE_URL)
+data_mod_date_country_deaths = get_data_mod_date(JHU_DEATH_DATA_FILE_URL)
+
+country_time_delta = (get_data_mod_date(JHU_DATA_FILE_URL, datetime=True) -
+                      get_data_mod_date(JHU_DEATH_DATA_FILE_URL, datetime=True)).total_seconds()
+country_same_time = country_time_delta < 20 * 60  # 20 minutes
+
+data_mod_date_state = get_data_mod_date(NYT_STATE_DATA_FILE_URL)
+
+data_updated_str = 'data last updated on '
+if country_same_time:
+    data_updated_str += f'{data_mod_date_country} [country data] & '
+else:
+    data_updated_str += f'{data_mod_date_country} [country cases] & ' \
+                        f'{data_mod_date_country_deaths} [country deaths] & '
+data_updated_str += f'{data_mod_date_state} [state data]'
 
 x_max = min(data[data['location'] == 'United States']['since_t0'].max() + PLOT_LOOKAHEAD,
             data['since_t0'].max())
@@ -31,9 +47,10 @@ states = data_us.groupby('state').max()['total'].sort_values(ascending=False).ke
 app.layout = html.Div([
     dcc.Markdown('# Coronavirus Confirmed Cases\n' +
                  '_(based on data from Johns Hopkins\' Coronavirus Resource Center - ' +
-                 '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_'),
+                 '[https://coronavirus.jhu.edu](https://coronavirus.jhu.edu))_ and ' +
+                 'the NY Times'),
     html.P([
-        html.I(f'data last updated on {data_mod_date}'),
+        html.I(data_updated_str),
         html.Br(),
     ]),
     html.P([
@@ -211,9 +228,12 @@ app.layout = html.Div([
                          'height': '70vh',
                          'width': '100%'}),
     ], style={'width': '95%', 'float': 'center', 'display': 'inline-block'}),
-    html.P([html.B('data source: '),
+    html.P([html.B('data sources: '),
             html.A("https://github.com/CSSEGISandData/COVID-19",
                    href="https://github.com/CSSEGISandData/COVID-19"),
+            ', ',
+            html.A("https://github.com/nytimes/covid-19-data",
+                   href="https://github.com/nytimes/covid-19-data"),
             html.Br(),
             html.B('code source: '),
             html.A("https://github.com/slstarnes/coronavirus-stats",

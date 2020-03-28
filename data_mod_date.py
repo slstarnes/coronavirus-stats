@@ -4,7 +4,7 @@ from lxml import html as html_parser
 import pytz
 
 
-def get_data_mod_date(url):
+def get_data_mod_date(url, datetime=False):
     r = requests.get(url)
     if r.status_code == 200:
         tree = html_parser.fromstring(r.content)
@@ -12,5 +12,8 @@ def get_data_mod_date(url):
         d = date_parser(t[0].attrib['datetime'])
         tz = pytz.timezone('America/New_York')
         d = d.astimezone(tz)
-        return f'{d:%m-%d-%Y @ %-I:%M %p %Z}'
+        if datetime:
+            return d
+        else:
+            return f'{d:%m-%d-%Y @ %-I:%M %p %Z}'
     return
