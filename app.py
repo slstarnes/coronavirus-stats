@@ -54,6 +54,14 @@ app.layout = html.Div([
         html.Br(),
     ]),
     html.P([
+        html.B('Note: '),
+        'For best results, pan on axes and resize by modifying axes '
+        '(hover over beginning or end of axis) rather than box zooming.',
+        html.Br(),
+        html.B('Note: '),
+        'You can select add/remove countries/states via the selector box.'
+    ]),
+    html.P([
         '| ',
         html.A('Cases by Country', href='#country-line'),
         ' | ',
