@@ -3,9 +3,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 from plotly.subplots import make_subplots
 from data import get_data, country_filter, state_filter
-from constants import (PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS, COUNTRY_T0_CASES_THRESHOLD)
+from constants import (PLOT_LOOKAHEAD, JHU_DATA_FILE_URL, TRACE_COLORS,
+                       COUNTRY_T0_CASES_THRESHOLD, CASES_PER_CAPITA_VALUE,
+                       DEATHS_PER_CAPITA_VALUE)
 from data_mod_date import get_data_mod_date
 from population_data import population_dict, us_population_dict
+from utilities import human_format
 
 
 dcc.Graph.responsive = True
@@ -65,7 +68,8 @@ app.layout = html.Div([
                 id="PerCapitaSelector1",
                 options=[
                     {'label': 'Raw', 'value': 'total'},
-                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
+                    {'label': f'By Population (per {human_format(CASES_PER_CAPITA_VALUE)})',
+                     'value': 'per_capita'}
                 ],
                 value='total',
                 labelStyle={'display': 'inline-block'}),
@@ -119,7 +123,8 @@ app.layout = html.Div([
                 id="PerCapitaSelector2",
                 options=[
                     {'label': 'Raw', 'value': 'total'},
-                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
+                    {'label': f'By Population (per {human_format(DEATHS_PER_CAPITA_VALUE)})',
+                     'value': 'per_capita'}
                 ],
                 value='total',
                 labelStyle={'display': 'inline-block'}),
@@ -174,7 +179,8 @@ app.layout = html.Div([
                 id="StatePerCapitaSelector1",
                 options=[
                     {'label': 'Raw', 'value': 'total'},
-                    {'label': 'By Population (per 100K)', 'value': 'per_capita'}
+                    {'label': f'By Population (per {human_format(CASES_PER_CAPITA_VALUE)})',
+                     'value': 'per_capita'}
                 ],
                 value='total',
                 labelStyle={'display': 'inline-block'}),
@@ -226,7 +232,7 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
                         horizontal_spacing=0)
-    # line chart
+    per_x = human_format(CASES_PER_CAPITA_VALUE)
     for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
@@ -234,7 +240,7 @@ def update_country_line_graph(country_selection, log_selection, per_capita_selec
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'customdata': [f'Confirmed Cases: {cases:,}<br>'
                            f'Population: {pop:,}<br>'
-                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
+                           f'Cases Per {per_x}: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
                                 df[df['location'] == c]['total'].astype(int).values,
                                 df[df['location'] == c]['per_capita'].values)],
@@ -281,8 +287,7 @@ def update_country_death_graph(country_selection, log_selection, per_capita_sele
                         horizontal_spacing=0)
 
     df = df.query('deaths_total > 0')
-
-    # line chart
+    per_x = human_format(DEATHS_PER_CAPITA_VALUE)
     for i, c in enumerate(country_selection):
         fig.append_trace({
             'x': df[df['location'] == c]['since_t0'],
@@ -290,7 +295,7 @@ def update_country_death_graph(country_selection, log_selection, per_capita_sele
             'text': df[df['location'] == c]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'customdata': [f'Deaths: {deaths:,}<br>'
                            f'Population: {pop:,}<br>'
-                           f'Deaths Per 1M: {cpc:.2f}' for pop, deaths, cpc in zip(
+                           f'Deaths Per {per_x}: {cpc:.2f}' for pop, deaths, cpc in zip(
                 [int(population_dict.get(c, 0))] * len(df[df['location'] == c]),
                 df[df['location'] == c]['deaths_total'].astype(int).values,
                 df[df['location'] == c]['deaths_per_capita'].values)],
@@ -334,7 +339,7 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
     fig = make_subplots(rows=1, cols=1,
                         vertical_spacing=0.08,
                         horizontal_spacing=0)
-    # line chart
+    per_x = human_format(CASES_PER_CAPITA_VALUE)
     for i, s in enumerate(state_selection):
         fig.append_trace({
             'x': df[df['state'] == s]['date'],
@@ -342,7 +347,7 @@ def update_state_line_graph(state_selection, log_selection, per_capita_selection
             'text': df[df['state'] == s]['date'].map(lambda x: f'{x:%m-%d-%Y}'),
             'customdata': [f'Confirmed Cases: {cases:,}<br>'
                            f'Population: {pop:,}<br>'
-                           f'Cases Per 100K: {cpc:.2f}' for pop, cases, cpc in zip(
+                           f'Cases Per {per_x}: {cpc:.2f}' for pop, cases, cpc in zip(
                                 [int(us_population_dict.get(s, 0))] * len(df[df['state'] == s]),
                                 df[df['state'] == s]['total'].astype(int).values,
                                 df[df['state'] == s]['per_capita'].values)],
